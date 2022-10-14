@@ -1,35 +1,15 @@
 <script setup>
 import {
-  computed, watch, ref, nextTick,
+  watch, ref, nextTick,
 } from 'vue';
 import useStore from '../store';
 
 const store = useStore();
 
-const messages = computed(() => store.chat.messages.map((m) => {
-  const message = { ...m };
-
-  const from = store.chat.users.find((u) => u.id === message.from);
-  const to = store.chat.users.find((u) => u.id === message.to);
-
-  if (from) message.from = from;
-  if (to) message.to = to;
-
-  message.date = (new Date(message.date)).toLocaleTimeString();
-
-  message.flags = {
-    self: message.from.id === store.user.id,
-    private: !!to,
-    isMessage: message.type === 'message',
-  };
-
-  return message;
-}));
-
 const messagesView = ref(null);
 const lastScrollTop = ref(0);
 
-watch(messages, async () => {
+watch(store.chat.messages, async () => {
   await nextTick();
 
   const view = messagesView.value;
@@ -75,7 +55,7 @@ const onSend = () => {
             </div>
             <div class="chat-status flex items-center gap-2">
                 <div :class="`connection-status text-sm ${store.socket.connected ? 'text-green-400' : 'text-yellow-400'}`">
-                    {{ store.socket.connected }}
+                    {{ store.socket.connected ? 'online' : 'offline' }}
                 </div>
             </div>
         </div>
