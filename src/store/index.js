@@ -44,6 +44,7 @@ const useStore = defineStore('main', {
   }),
   actions: {
     connect() {
+      this.socket.io.auth = { username: this.user.name };
       this.socket.io.connect();
 
       this.socket.io.on('connect', () => {
@@ -54,7 +55,6 @@ const useStore = defineStore('main', {
 
       this.socket.io.on('disconnect', () => {
         this.$router.push('/');
-
         this.socket.connected = false;
         this.user.id = '';
         this.chat.title = '';

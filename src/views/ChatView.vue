@@ -74,7 +74,7 @@ const onSend = () => {
             <div :class="`chat-message-bubble rounded-lg px-4 py-2 min-w-0 w-fit max-w-xl text-white bg-neutral-800 ${message.flags.self && 'bg-indigo-600'}`">
               <div style="word-break: break-word" :class="`chat-message-text ${message.flags.isMessage || 'text-sm'}`">{{ message.text }}</div>
 
-              <div v-if="message.flags.isMessage" :class="`chat-message-details flex justify-end gap-1 text-xs ${message.flags.self ? 'text-white' : 'text-neutral-500'}`">
+              <div v-if="message.flags.isMessage" :class="`chat-message-details flex gap-1 text-xs ${message.flags.self ? 'text-white' : 'text-neutral-500'}`">
                 <div v-if="!message.flags.self" class="chat-message-author">{{ message.from.name }}</div>
                 <div class="chat-message-date">{{ message.date }}</div>
               </div>
