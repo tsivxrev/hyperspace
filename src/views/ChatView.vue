@@ -1,6 +1,6 @@
 <script setup>
 import {
-  watch, ref, nextTick,
+  watch, ref, nextTick, onMounted,
 } from 'vue';
 import useStore from '../store';
 
@@ -8,6 +8,12 @@ const store = useStore();
 
 const messagesView = ref(null);
 const lastScrollTop = ref(0);
+
+onMounted(() => {
+  if (!store.socket.connected) {
+    store.$router.push('/');
+  }
+});
 
 watch(store.chat.messages, async () => {
   await nextTick();
@@ -47,7 +53,7 @@ const onSend = () => {
 </script>
 
 <template>
-    <div class="chat-view h-full px-4">
+    <div class="chat-view px-4">
         <div class="chat-header w-full flex justify-between py-2 gap-2">
             <div class="chat-info flex items-center gap-2">
                 <div class="chat-title text-white font-medium">{{ store.chat.title }}</div>
@@ -61,32 +67,19 @@ const onSend = () => {
         </div>
 
         <div ref="messagesView" class="chat-messages flex flex-col flex-grow py-2 gap-2 overflow-auto">
-            <div
-                    :class="`chat-message w-fit max-w-xl rounded-lg bg-neutral-800 px-4 py-2 ${
-                        message.flags.isMessage ?
-                        message.flags.self ?
-                        'self-end bg-indigo-600' :
-                        'self-start' :
-                        'self-center'
-                    }`"
-                    ref="messagesEl"
-                    v-for="message in store.chat.messages" :key="message.date"
-                    :data-message-id="message.id" :data-from-id="message.from.id"
-                >
-                    <div
-                        :class="`chat-message-content select-text text-white ${message.flags.isMessage ? '' : 'text-sm'}`"
-                    >
-                        {{ message.text }}
-                    </div>
+          <div v-for="message in store.chat.messages" :key="message.date"
+            :class="`chat-message ${message.flags.isMessage ? message.flags.self ? 'self-end' : 'self-start' : 'self-center'}`"
+            :data-message-id="message.id" :data-from-id="message.from.id"
+          >
+            <div :class="`chat-message-bubble rounded-lg px-4 py-2 min-w-0 w-fit max-w-xl text-white bg-neutral-800 ${message.flags.self && 'bg-indigo-600'}`">
+              <div style="word-break: break-word" :class="`chat-message-text ${message.flags.isMessage || 'text-sm'}`">{{ message.text }}</div>
 
-                    <div
-                        v-if="message.flags.isMessage"
-                        :class="`chat-message-status flex gap-1 text-xs ${message.flags.self ? 'text-white' : 'text-neutral-500'}`"
-                    >
-                        <div class="chat-message-date">{{ message.date }}</div>
-                        <div v-if="!message.flags.self" class="chat-message-author">{{ message.from.name }}</div>
-                    </div>
-                </div>
+              <div v-if="message.flags.isMessage" :class="`chat-message-details flex justify-end gap-1 text-xs ${message.flags.self ? 'text-white' : 'text-neutral-500'}`">
+                <div v-if="!message.flags.self" class="chat-message-author">{{ message.from.name }}</div>
+                <div class="chat-message-date">{{ message.date }}</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="chat-actions flex py-2">

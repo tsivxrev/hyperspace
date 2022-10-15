@@ -1,13 +1,18 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 
-import ChatView from '../views/ChatView.vue';
+import Home from '../views/HomeView.vue';
+import Chat from '../views/ChatView.vue';
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/',
-      component: ChatView, // TODO: создать главную страницу с выбором имени и прочими настройками
+      component: Home,
+    },
+    {
+      path: '/chat',
+      component: Chat,
     },
   ],
 });

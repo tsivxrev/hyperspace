@@ -37,9 +37,9 @@ const useStore = defineStore('main', {
     },
 
     user: {
-      id: 'root',
-      name: 'root',
-      session: 'session-id',
+      id: '',
+      name: '',
+      session: 'session-id', // todo
     },
   }),
   actions: {
@@ -47,11 +47,14 @@ const useStore = defineStore('main', {
       this.socket.io.connect();
 
       this.socket.io.on('connect', () => {
+        this.$router.push('/chat');
         this.socket.connected = true;
         this.socket.io.emit('init');
       });
 
       this.socket.io.on('disconnect', () => {
+        this.$router.push('/');
+
         this.socket.connected = false;
         this.user.id = '';
         this.chat.title = '';
@@ -68,7 +71,7 @@ const useStore = defineStore('main', {
         this.user.name = name;
 
         this.socket.io.auth = { sessionId };
-        localStorage.setItem('session_id', sessionId); // TODO: добавить поддержку сессии
+        // localStorage.setItem('session_id', sessionId); TODO: добавить поддержку сессии
         localStorage.setItem('username', name);
       });
 

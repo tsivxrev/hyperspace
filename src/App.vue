@@ -1,14 +1,9 @@
 <script setup>
-import { onMounted } from 'vue';
 import useStore from './store';
 
 const store = useStore();
 // eslint-disable-next-line no-underscore-dangle
 window._store = store;
-
-onMounted(() => {
-  store.connect();
-});
 
 </script>
 
