@@ -109,7 +109,7 @@ const useStore = defineStore('main', {
       if (from) message.from = from;
       if (to) message.to = to;
 
-      message.date = (new Date(message.date)).toLocaleTimeString();
+      message.date = (new Date(message.date * 1000)).toLocaleTimeString();
 
       message.flags = {
         self: message.from.id === this.user.id,

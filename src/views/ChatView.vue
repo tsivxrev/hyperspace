@@ -16,7 +16,7 @@ watch(store.chat.messages, async () => {
   const lastMessage = messagesView.value.lastElementChild;
 
   if (lastMessage.dataset.fromId === store.user.id || lastScrollTop.value < view.scrollTop) {
-    lastMessage.scrollIntoView({ behavior: 'smooth' });
+    lastMessage.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }
 
   lastScrollTop.value = messagesView.value.scrollTop;
@@ -74,7 +74,7 @@ const onSend = () => {
                     :data-message-id="message.id" :data-from-id="message.from.id"
                 >
                     <div
-                        :class="`chat-message-content break-all select-text text-white ${message.flags.isMessage ? '' : 'text-sm'}`"
+                        :class="`chat-message-content select-text text-white ${message.flags.isMessage ? '' : 'text-sm'}`"
                     >
                         {{ message.text }}
                     </div>
