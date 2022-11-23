@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 
-import Home from '../views/HomeView.vue';
+import Welcome from '../views/WelcomeView.vue';
 import Chat from '../views/ChatView.vue';
 
 const router = createRouter({
@@ -8,7 +8,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: Home,
+      component: Welcome,
     },
     {
       path: '/chat',

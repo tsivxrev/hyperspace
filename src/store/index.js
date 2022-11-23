@@ -1,15 +1,17 @@
 import { defineStore } from 'pinia';
-import { io } from 'socket.io-client';
 
 const useStore = defineStore('main', {
   state: () => ({
     socket: {
-      io: io('https://chat.tsivx.ru', { autoConnect: false, path: '/api' }),
+      io: null,
       connected: false,
     },
 
     chat: {
-      title: 'hyperspace',
+      title: 'Hyperspace Messenger',
+      avatar: 'https://static.wixstatic.com/media/713b90_7841ba78e810446f8765776b69ee76e3~mv2.png',
+      joined: false,
+      description: 'A real-time SocketIO messenger.',
       /** @type {[{id: String, name: String}]} */
       users: [],
       /**
@@ -18,6 +20,7 @@ const useStore = defineStore('main', {
           type: String,
           date: String,
           text: String,
+          attachment: { type: String, url: String },
           from: { id: String, name: String },
           to: {id: String, name: String },
           flags: {
@@ -32,95 +35,111 @@ const useStore = defineStore('main', {
         typingTimeout: 0,
         typing: false,
         draft: '',
-        recipent: '',
+        recipent: null,
+        attachment: null,
       },
     },
 
     user: {
-      id: '',
-      name: '',
-      session: 'session-id', // todo
+      id: null,
+      name: null,
     },
   }),
   actions: {
-    connect() {
-      this.socket.io.auth = { username: this.user.name };
-      this.socket.io.connect();
-
-      this.socket.io.on('connect', () => {
-        this.$router.push('/chat');
-        this.socket.connected = true;
-        this.socket.io.emit('init');
-      });
-
-      this.socket.io.on('disconnect', () => {
-        this.$router.push('/');
-        this.socket.connected = false;
-        this.user.id = '';
-        this.chat.title = '';
-        this.chat.users = [];
-        this.chat.messages = [];
-      });
-
-      this.socket.io.on('message', ({ message }) => {
-        this.pushMessage(message);
-      });
-
-      this.socket.io.on('user', ({ id, name, sessionId }) => {
-        this.user.id = id;
-        this.user.name = name;
-
-        this.socket.io.auth = { sessionId };
-        // localStorage.setItem('session_id', sessionId); TODO: добавить поддержку сессии
-        localStorage.setItem('username', name);
-      });
-
-      this.socket.io.on('chat', ({ title, users }) => {
-        this.chat.title = title;
-        this.chat.users = users;
-      });
-
-      this.socket.io.on('event', ({ type, user }) => {
-        const message = {
-          type: 'event',
-          date: Math.floor(Date.now() / 1000),
-          text: 'Unknown event',
-          from: user.id,
-        };
-
-        switch (type) {
-          case 'join':
-            message.text = `${user.name} connected`;
-            break;
-          case 'leave':
-            message.text = `${user.name} disconnected`;
-            break;
-          default:
-            break;
-        }
-
-        this.pushMessage(message);
-      });
+    join(chatId) {
+      this.socket.io.emit('join', { username: this.user.name, chatId });
     },
 
-    pushMessage(m) {
-      const message = { ...m };
+    onConnect() {
+      this.socket.connected = true;
+    },
 
-      const from = this.chat.users.find((u) => u.id === message.from);
-      const to = this.chat.users.find((u) => u.id === message.to);
+    onDisconnect() {
+      this.socket.connected = false;
+      this.user.id = '';
+      this.chat.title = 'Hyperspace Messenger';
+      this.chat.description = 'A real-time SocketIO messenger.';
+      this.chat.avatar = 'https://static.wixstatic.com/media/713b90_7841ba78e810446f8765776b69ee76e3~mv2.png';
+      this.chat.users = [];
+      this.chat.messages = [];
+      this.chat.joined = false;
 
-      if (from) message.from = from;
-      if (to) message.to = to;
+      this.$router.push('/');
+    },
+
+    onUserChanged({ id, name }) {
+      this.user.id = id;
+      this.user.name = name;
+    },
+
+    onChatChanged({
+      title, description, avatar, users,
+    }) {
+      this.chat.title = title;
+      this.chat.description = description;
+      this.chat.avatar = avatar;
+      this.chat.users = users;
+    },
+
+    onEvent({ type, user, extra }) {
+      switch (type) {
+        case 'join':
+          if (user.id === this.user.id) {
+            this.chat.joined = true;
+          }
+
+          this.event({
+            text: `${user.name} теперь в чате`,
+            from: user,
+          });
+          break;
+        case 'leave':
+          if (user.id === this.user.id) { // не знаю при каких обстоятельствах такое может произойти, но почему бы и нет.
+            this.chat.joined = false;
+          }
+
+          this.event({
+            text: `${user.name} покинул(а) чат`,
+            from: user,
+          });
+          break;
+        case 'broadcast':
+          this.event({
+            text: extra.text,
+            from: user,
+          });
+          break;
+        default:
+          break;
+      }
+    },
+
+    onMessage(msg) {
+      const message = { ...msg };
 
       message.date = (new Date(message.date * 1000)).toLocaleTimeString();
-
-      message.flags = {
-        self: message.from.id === this.user.id,
-        private: !!to,
-        isMessage: message.type === 'message',
-      };
+      message.flags.self = message.from.id === this.user.id;
 
       this.chat.messages.push(message);
+    },
+
+    event({ text, from }) {
+      const event = {
+        id: null,
+        type: 'event',
+        date: (new Date()).toLocaleTimeString(),
+        text,
+        attachment: null,
+        from,
+        to: null,
+        flags: {
+          self: null,
+          private: null,
+          isMessage: false,
+        },
+      };
+
+      this.chat.messages.push(event);
     },
 
     emitTyping(isTyping) {
@@ -134,12 +153,13 @@ const useStore = defineStore('main', {
     },
 
     emitMessage() {
-      const { recipent, draft } = this.chat.input;
-      if (!draft.length) return;
+      const { recipent, draft, attachment } = this.chat.input;
+      if (!draft && !attachment) return;
 
       this.emitTyping(false);
-      this.socket.io.emit('message', { to: recipent, text: draft });
+      this.socket.io.emit('message', { to: recipent, text: draft, attachment });
       this.chat.input.draft = '';
+      this.chat.input.attachment = null;
     },
   },
 });
